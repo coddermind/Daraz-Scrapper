@@ -42,57 +42,58 @@ elif selected_category=="Landline Phones":
     url+="corded-phones/"
 
 if st.button("Scrape Data"):
-    # Set up Selenium WebDriver options
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    while st.spinner("Scrapping...")
+        # Set up Selenium WebDriver options
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+        products = []
     
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-    products = []
-
-    try:
-        # Loop over pages
-        for page in range(1, int(number_of_pages) + 1):
-            driver.get(f"{url}?page={page}")
-            time.sleep(5)  # Allow time for the page to load
-            
-            # Get HTML content rendered by Selenium
-            page_html = driver.page_source
-            soup = BeautifulSoup(page_html, "html.parser")
-            
-            # Locate and extract product details
-            for item in soup.find_all("div", class_="buTCk"):
-                name = item.find("div", class_="RfADt").get_text(strip=True) if item.find("div", class_="RfADt") else "N/A"
-                link=item.find("a",class_="")["href"]
-                price = item.find("div", class_="aBrP0").get_text(strip=True) if item.find("div", class_="aBrP0") else "N/A"
-                sold = item.find("div", class_="_6uN7R").get_text(strip=True) if item.find("div", class_="_6uN7R") else "N/A"
+        try:
+            # Loop over pages
+            for page in range(1, int(number_of_pages) + 1):
+                driver.get(f"{url}?page={page}")
+                time.sleep(5)  # Allow time for the page to load
                 
-                # Store the extracted data in a dictionary
-                context = {
-                    "Title on Daraz": name,
-                    "Price": price,
-                    "Pieces Sold": sold,
-                    "Product Link":link
-                }
-                products.append(context)
+                # Get HTML content rendered by Selenium
+                page_html = driver.page_source
+                soup = BeautifulSoup(page_html, "html.parser")
                 
-    finally:
-        # Close the WebDriver
-        driver.quit()
-
-    # Display the data
-    if products:
-        df = pd.DataFrame(products)
-        st.dataframe(df)
-        # Optionally, save to CSV
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download data as CSV",
-            data=csv,
-            file_name='daraz_data.csv',
-            mime='text/csv',
-        )
-    else:
-        st.write("No products found.")
+                # Locate and extract product details
+                for item in soup.find_all("div", class_="buTCk"):
+                    name = item.find("div", class_="RfADt").get_text(strip=True) if item.find("div", class_="RfADt") else "N/A"
+                    link=item.find("a",class_="")["href"]
+                    price = item.find("div", class_="aBrP0").get_text(strip=True) if item.find("div", class_="aBrP0") else "N/A"
+                    sold = item.find("div", class_="_6uN7R").get_text(strip=True) if item.find("div", class_="_6uN7R") else "N/A"
+                    
+                    # Store the extracted data in a dictionary
+                    context = {
+                        "Title on Daraz": name,
+                        "Price": price,
+                        "Pieces Sold": sold,
+                        "Product Link":link
+                    }
+                    products.append(context)
+                    
+        finally:
+            # Close the WebDriver
+            driver.quit()
+    
+        # Display the data
+        if products:
+            df = pd.DataFrame(products)
+            st.dataframe(df)
+            # Optionally, save to CSV
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download data as CSV",
+                data=csv,
+                file_name='daraz_data.csv',
+                mime='text/csv',
+            )
+        else:
+            st.write("No products found.")
