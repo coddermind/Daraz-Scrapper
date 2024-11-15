@@ -2,57 +2,67 @@ import streamlit as st
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import pandas as pd
 import time
+import subprocess
+import os
 
+# Install Google Chrome and ChromeDriver
+def install_chrome_driver():
+    if not os.path.exists("/usr/bin/google-chrome"):
+        subprocess.run("wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb", shell=True)
+        subprocess.run("apt-get update && apt-get install -y ./google-chrome-stable_current_amd64.deb", shell=True)
+    if not os.path.exists("/usr/bin/chromedriver"):
+        subprocess.run("wget -N https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip", shell=True)
+        subprocess.run("unzip -o chromedriver_linux64.zip -d /usr/bin/", shell=True)
+        subprocess.run("chmod +x /usr/bin/chromedriver", shell=True)
 
+install_chrome_driver()
+
+# Set up Streamlit interface
 st.title("Daraz Scraper by Muhammad Abrar")
-category_list = ["Feature Phone", "Smart Phones", "Gaming Consoles", "Smart Watches", "Monitors", "Laptops", "Mobile Accessories", "Computer Accessories","Camera Accessories","Wearable Technology","Computer Components","Landline Phones"]
+category_list = [
+    "Feature Phone", "Smart Phones", "Gaming Consoles", "Smart Watches", "Monitors",
+    "Laptops", "Mobile Accessories", "Computer Accessories", "Camera Accessories",
+    "Wearable Technology", "Computer Components", "Landline Phones"
+]
 
 selected_category = st.selectbox(label="Select Category", options=category_list)
 number_of_pages = st.number_input("Number of pages you want to scrape", value=1)
 
+# Category URL Mapping
 url = "https://www.daraz.pk/"
+category_urls = {
+    "Feature Phone": "featurephones/",
+    "Smart Phones": "smartphones/",
+    "Gaming Consoles": "gaming-consoles/",
+    "Smart Watches": "smart-watches/",
+    "Monitors": "monitors/",
+    "Laptops": "laptops",
+    "Mobile Accessories": "mobiles-tablets-accessories/",
+    "Computer Accessories": "computing-peripherals-accessories/",
+    "Camera Accessories": "camera-accessories/",
+    "Wearable Technology": "wearable-technology/",
+    "Computer Components": "components-spare-parts/",
+    "Landline Phones": "corded-phones/"
+}
+url += category_urls.get(selected_category, "")
 
-if selected_category == "Feature Phone":
-    url += "featurephones/"
-elif selected_category == "Smart Phones":
-    url += "smartphones/"
-elif selected_category == "Gaming Consoles":
-    url += "gaming-consoles/"
-elif selected_category == "Smart Watches":
-    url += "smart-watches/"
-elif selected_category == "Monitors":
-    url += "monitors/"
-elif selected_category == "Laptops":
-    url += "laptops"
-elif selected_category == "Mobile Accessories":
-    url += "mobiles-tablets-accessories/"
-elif selected_category == "Computer Accessories":
-    url += "computing-peripherals-accessories/"
-elif selected_category=="Camera Accessories":
-    url+="camera-accessories/"
-elif selected_category=="Wearable Technology":
-    url+="wearable-technology/"
-elif selected_category=="Computer Components":
-    url+="components-spare-parts/"
-elif selected_category=="Landline Phones":
-    url+="corded-phones/"
-
+# Scraping process
 if st.button("Scrape Data"):
-    while st.spinner("Scrapping..."):
-        # Set up Selenium WebDriver options
+    with st.spinner("Scraping..."):
+        # Set up Selenium WebDriver
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.binary_location = "/usr/bin/google-chrome"
         
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+        driver = webdriver.Chrome(service=Service("/usr/bin/chromedriver"), options=chrome_options)
         products = []
-    
+
         try:
             # Loop over pages
             for page in range(1, int(number_of_pages) + 1):
@@ -66,7 +76,7 @@ if st.button("Scrape Data"):
                 # Locate and extract product details
                 for item in soup.find_all("div", class_="buTCk"):
                     name = item.find("div", class_="RfADt").get_text(strip=True) if item.find("div", class_="RfADt") else "N/A"
-                    link=item.find("a",class_="")["href"]
+                    link = item.find("a", class_="")["href"] if item.find("a", class_="") else "N/A"
                     price = item.find("div", class_="aBrP0").get_text(strip=True) if item.find("div", class_="aBrP0") else "N/A"
                     sold = item.find("div", class_="_6uN7R").get_text(strip=True) if item.find("div", class_="_6uN7R") else "N/A"
                     
@@ -75,7 +85,7 @@ if st.button("Scrape Data"):
                         "Title on Daraz": name,
                         "Price": price,
                         "Pieces Sold": sold,
-                        "Product Link":link
+                        "Product Link": "https://www.daraz.pk" + link if link != "N/A" else "N/A"
                     }
                     products.append(context)
                     
