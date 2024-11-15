@@ -42,7 +42,7 @@ elif selected_category=="Landline Phones":
     url+="corded-phones/"
 
 if st.button("Scrape Data"):
-    while st.spinner("Scrapping...")
+    while st.spinner("Scrapping..."):
         # Set up Selenium WebDriver options
         chrome_options = Options()
         chrome_options.add_argument("--headless")
